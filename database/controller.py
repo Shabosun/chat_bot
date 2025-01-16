@@ -1,7 +1,7 @@
 # from logger import logger
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import *
+from database.models import *
 
 
 class ChatDB:
@@ -55,4 +55,7 @@ class ChatDB:
 
     def get_user_by_tid(self, telegram_id):
         return self.session.query(User).filter(User.telegram_id == telegram_id).first()
-        
+    
+    def get_all_users(self):
+        return self.session.query(User).all()
+
