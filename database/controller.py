@@ -22,6 +22,9 @@ class ChatDB:
 
         self.session.query(User).delete()
     
+    def __exit__(self, type, value, traceback):
+        self.session.close()
+    
 
     def add_user(self, user):
         try:
@@ -58,4 +61,12 @@ class ChatDB:
     
     def get_all_users(self):
         return self.session.query(User).all()
+    def get_user_by_id(self, id):
+        return self.session.query(User).filter(User.id == id).first()
 
+    # def user_to_str(self, user : User) -> str:
+    #     return (f"""{user.username}, {user.age} 
+    #         \n{user.tg_name}
+    #         \n{user.info}""")
+
+db = ChatDB()
