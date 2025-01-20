@@ -40,15 +40,10 @@ def users_to_str_users_list():
     users_list = []
     for user in users:
         users_list.append(f"""{user.username}, {user.age} 
-        \n{user.tg_name}
+        \n{user.telegram_name}
         \n{user.info}""")
     return users_list
 
-
-
-# items = [f"Item {i}" for i in range(1, 101)] 
-# items = users_to_str()
-# items_per_page = 1
 
 
 async def start(update : Update, context : ContextTypes.DEFAULT_TYPE) -> int:
@@ -57,6 +52,8 @@ async def start(update : Update, context : ContextTypes.DEFAULT_TYPE) -> int:
     \nТы можешь выбрать действие с помощью меню ниже!
     \nНо для начала давай заполним анкету :)"""
 
+    # db.add_user(telegram_id=user.id, tg_name=user.name)
+    
     await update.message.reply_text(reply_text, reply_markup=questionnaire_menu)
 
     return CHOOSING
@@ -65,13 +62,14 @@ async def start(update : Update, context : ContextTypes.DEFAULT_TYPE) -> int:
 def facts_to_str(user_data: dict[str, str]) -> str:
     """Helper function for formatting the gathered user info."""
     facts = [f"{key} - {value}" for key, value in user_data.items()]
+    print(facts)
     return "\n".join(facts).join(["\n", "\n"])
 
 async def regular_choice(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Ask the user for info about the selected predefined choice."""
     text = update.message.text
     context.user_data["choice"] = text
-    await update.message.reply_text(f"{text.lower()}? Да, я бы с удовольствием об этом услышал!")
+    await update.message.reply_text(f"{text}? Да, я бы с удовольствием об этом узнал!")
 
     return TYPING_REPLY
 
@@ -105,8 +103,21 @@ async def print_bot_info(update : Update, context : ContextTypes.DEFAULT_TYPE) -
 async def done(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Display the gathered info and end the conversation."""
     user_data = context.user_data
+    user_id = update.effective_user.id
+    user_name = update.effective_user.name
     if "choice" in user_data:
         del user_data["choice"]
+
+    
+    db.add_user(
+        user_id,
+        user_name,
+        user_data.get("Имя"), 
+        user_data.get("Возраст"), 
+        user_data.get("Пол"), 
+        user_data.get("Хобби и интересы"))
+
+    
 
     await update.message.reply_text(
         f"Вот твоя анкета: {facts_to_str(user_data)} Давай продолжим!",
@@ -122,7 +133,7 @@ async def print_users(update: Update, context: CallbackContext) -> int:
     """Отправляет первое сообщение с кнопками пагинации."""
     context.user_data['page'] = 0  # Начинаем с первой страницы
     await send_page(update, context)
-    # await update.message.reply_text("users_list")
+    
     return MENU
 
 async def send_page(update: Update, context: CallbackContext) -> None:
@@ -130,7 +141,6 @@ async def send_page(update: Update, context: CallbackContext) -> None:
 
 
     items = users_to_str_users_list()
-    # usrs = db.get_all_users()
     items_per_page = 1
     
     page = context.user_data['page']
@@ -141,16 +151,14 @@ async def send_page(update: Update, context: CallbackContext) -> None:
     
 
     message = "\n".join(page_items)
-    # message = users_to_str_users_list()
-    # message = db.user_to_str(page_items[page])
     
     keyboard = []
     # Кнопки "Назад" и "Вперед"
     if page > 0:
         keyboard = [
             [
-                # InlineKeyboardButton("Написать анонимно", callback_data='hello')
-                InlineKeyboardButton("Написать анонимно", callback_data=context.user_data['page'])
+                # InlineKeyboardButton("Написать анонимно", callback_data=context.user_data['page'])
+                InlineKeyboardButton("Написать анонимно", callback_data='hello')
             ],
             [
                 InlineKeyboardButton("Назад", callback_data='prev'),
@@ -162,8 +170,8 @@ async def send_page(update: Update, context: CallbackContext) -> None:
     if end_index < len(items):
         keyboard = [
             [
-                #InlineKeyboardButton("Написать анонимно", callback_data='hello')
-                InlineKeyboardButton("Написать анонимно", callback_data=context.user_data['page'])
+                # InlineKeyboardButton("Написать анонимно", callback_data=context.user_data['page'])
+                InlineKeyboardButton("Написать анонимно", callback_data='hello')
                 
             ],
             [
@@ -175,16 +183,18 @@ async def send_page(update: Update, context: CallbackContext) -> None:
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     if page == 0:
+        print("0")
         await update.message.reply_text(message, reply_markup=reply_markup)
     else:
+        print("ne 0")
         await update.message.edit_text(message, reply_markup=reply_markup)
-    
-    # await update.message.reply_text(message, reply_markup=reply_markup)
 
 async def button(update: Update, context: CallbackContext) -> None:
     """Обрабатывает нажатия кнопок."""
     query = update.callback_query
     query.answer()
+
+    print("button")
    
    
 
@@ -196,17 +206,19 @@ async def button(update: Update, context: CallbackContext) -> None:
         context.user_data['page'] += 1
     else:
         print("smth")
-        user_id = int(query.data) + 1
-        companion = db.get_user_by_id()
-        
-        # print(context.user_data['page'])
-        # user_id = context.user_data['page'] + 1
-        # user = db.get_user_by_id(user_id)
-        # print(user.username)
-    
+        # user_id = int(query.data) + 1
+        # companion = db.get_user_by_id(user_id)
+        # user_is_free(companion)
+
 
     await send_page(query, context)
 
+
+def user_is_free(user) -> bool:
+    if(user.state == 1 and user.conversation_with == None):
+        print("free")
+    else:
+        print("busy")
 
 def main() -> None:
 
@@ -238,12 +250,13 @@ def main() -> None:
                 ],
                 USERS:[
                     MessageHandler(filters.Regex("^Посмотреть список пользователей$"), print_users),
-                    # CallbackQueryHandler(button),
+                    # CallbackQueryHandler(button, pattern="^prev|next$"),
+                    # CallbackQueryHandler(button)
                     # CallbackQueryHandler(show_profile, pattern="^hello$")
                     
                 ],
                 MENU: [
-                        # CallbackQueryHandler(button, pattern="^prev|next|hello$"),
+                        # CallbackQueryHandler(button, pattern="^prev|next$"),
                         CallbackQueryHandler(button)
                 ],
                 CHATTING: [
