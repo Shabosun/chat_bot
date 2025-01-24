@@ -17,6 +17,6 @@ class User(Base):
     sex = Column(String)
     info = Column(String )
     state = Column(Integer, default=0) #0 - free, 1 - busy
-    conversation_with = Column(Integer, unique=True) 
+    conversation_with = Column(Integer, default=0) 
     
 

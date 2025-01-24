@@ -14,7 +14,11 @@ reply_keyboard = [
     ],
     [
         InlineKeyboardButton("Информация о боте")
+    ],
+    [
+        InlineKeyboardButton("Поиск собеседника")
     ]
+    
 
 ]
 
